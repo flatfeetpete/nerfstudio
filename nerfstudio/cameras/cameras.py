@@ -733,7 +733,6 @@ class Cameras(TensorDataclass):
 
         EYE_DISTANCE = 0.5
 
-        print(origins.shape[1])
         assert origins.shape[1] & 1 == 0
         # TODO: Work out torchy way to do this.
         half_x_value = origins.shape[1] // 2

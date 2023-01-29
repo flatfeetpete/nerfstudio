@@ -23,6 +23,7 @@ The function use prefix conventions in the following way:
 
 from typing import Any, List, Optional, Union
 
+import itertools
 import numpy as np
 import plotly.graph_objects as go
 import torch
@@ -513,19 +514,42 @@ def vis_camera_rays(cameras: Cameras) -> go.Figure:  # type: ignore
     directions = ray_bundle.directions.view(-1, 3)
     coords = coords.view(-1, 3)
 
+    # lines = torch.empty((origins.shape[0] * 3, 3))
+    # lines[0::3] = origins
+    # lines[1::3] = origins + directions
+    # lines[2::3] = origins
+
+    colors = torch.empty((coords.shape[0] * 3, 3))
+    colors[0::3] = coords
+    colors[1::3] = coords
+    colors[2::3] = coords
+
+
     lines = torch.empty((origins.shape[0] * 2, 3))
     lines[0::2] = origins
     lines[1::2] = origins + directions
 
-    colors = torch.empty((coords.shape[0] * 2, 3))
-    colors[0::2] = coords
-    colors[1::2] = coords
+    # colors = torch.empty((coords.shape[0] * 2, 3))
+    # colors[0::2] = coords
+    # colors[1::2] = coords
+
+    none_block = [None] * int(lines.shape[0]/2)
+
+#    xdata = lines[:, 0] # list(lines[0::2, 0]) + list(lines[1::2, 0]) + none_block
+    xdata = list(itertools.chain(*zip(lines[0::2, 0], lines[1::2, 0])))
+    ydata = lines[:, 2] #list(lines[0::2, 2]) + list(lines[1::2, 2]) + none_block
+    zdata = lines[:, 1] #list(lines[0::2, 1]) + list(lines[1::2, 1]) + none_block
+
+    xdata = list(itertools.chain(*zip(lines[0::2, 0], lines[1::2, 0],none_block)))
+    ydata = list(itertools.chain(*zip(lines[0::2, 2], lines[1::2, 2],none_block)))
+    zdata = list(itertools.chain(*zip(lines[0::2, 1], lines[1::2, 1],none_block)))
+
 
     fig = go.Figure(
         data=go.Scatter3d(
-            x=lines[:, 0],
-            y=lines[:, 2],
-            z=lines[:, 1],
+            x=xdata,
+            y=ydata,
+            z=zdata,
             marker=dict(
                 size=4,
                 color=colors,
