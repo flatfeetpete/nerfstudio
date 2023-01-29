@@ -731,10 +731,12 @@ class Cameras(TensorDataclass):
 
         times = self.times[camera_indices, 0] if self.times is not None else None
 
-        EYE_DISTANCE = 0.5
+        # TODO: Work out torchy way to do this.
+        # Need to do this in camera space. Maybe 
+        EYE_DISTANCE = 0#.5
 
         assert origins.shape[1] & 1 == 0
-        # TODO: Work out torchy way to do this.
+        # First shift origins
         half_x_value = origins.shape[1] // 2
         for y in range(origins.shape[0]):
           for x in range(half_x_value):            
