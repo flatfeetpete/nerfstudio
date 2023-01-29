@@ -733,15 +733,42 @@ class Cameras(TensorDataclass):
 
         # TODO: Work out torchy way to do this.
         # Need to do this in camera space. Maybe 
-        EYE_DISTANCE = 0#.5
+        EYE_DISTANCE = 0.5
+
+        right_eye_shift_matrix = torch.eye(4)[None, :3, :] [0]
+        right_eye_shift_matrix[0][3] = EYE_DISTANCE
+
+        left_eye_shift_matrix = torch.eye(4)[None, :3, :] [0]
+        left_eye_shift_matrix[0][3] = -EYE_DISTANCE
+
+        right_eye_matrix = pose_utils.multiply(c2w[0][0], right_eye_shift_matrix)
+        origin_r = right_eye_matrix[...,:3,3];
+        left_eye_matrix = pose_utils.multiply(c2w[0][0], left_eye_shift_matrix)
+        origin_l = left_eye_matrix[...,:3,3];
+
+        # print("OL mat:", origin_l)
+
+        # origin_l = origins[0][0].clone();
+        # origin_l[0] = -EYE_DISTANCE;
+        # print("OL jack:", origin_l)
+        # origin_r = origins[0][0].clone();
+        # origin_r[0] = EYE_DISTANCE;
 
         assert origins.shape[1] & 1 == 0
         # First shift origins
         half_x_value = origins.shape[1] // 2
         for y in range(origins.shape[0]):
           for x in range(half_x_value):            
-            origins[y][x][0] = -EYE_DISTANCE
-            origins[y][x + half_x_value][0] = EYE_DISTANCE
+            origins[y][x] = origin_l
+            origins[y][x + half_x_value] = origin_r
+
+        half_x_value = directions.shape[1] // 2
+        for y in range(directions.shape[0]):
+          # TODO we should probably be smarter at creation time.
+          directions_downsampled = directions[y][::2].clone()
+          directions[y][:half_x_value] = directions_downsampled
+          directions[y][half_x_value:] = directions_downsampled
+
 
         return RayBundle(
             origins=origins,
