@@ -43,6 +43,7 @@ class CameraType(Enum):
     PERSPECTIVE = auto()
     FISHEYE = auto()
     EQUIRECTANGULAR = auto()
+    VR180 = auto()
 
 
 CAMERA_MODEL_TO_TYPE = {
@@ -315,7 +316,7 @@ class Cameras(TensorDataclass):
         distortion_params_delta: Optional[TensorType["num_rays":..., 6]] = None,
         keep_shape: Optional[bool] = None,
         disable_distortion: bool = False,
-        aabb_box: Optional[SceneBox] = None,
+        aabb_box: SceneBox = None,
     ) -> RayBundle:
         """Generates rays for the given camera indices.
 
@@ -678,8 +679,21 @@ class Cameras(TensorDataclass):
             directions_stack[..., 1][mask] = torch.masked_select(torch.cos(phi), mask).float()
             directions_stack[..., 2][mask] = torch.masked_select(-torch.cos(theta) * torch.sin(phi), mask).float()
 
+        if CameraType.VR180.value in cam_types:
+            mask = (self.camera_type[true_indices] == CameraType.VR180.value).squeeze(-1)  # (num_rays)
+            mask = torch.stack([mask, mask, mask], dim=0)
+
+            theta = torch.sqrt(torch.sum(coord_stack**2, dim=-1))
+            theta = torch.clip(theta, 0.0, math.pi)
+
+            sin_theta = torch.sin(theta)
+
+            directions_stack[..., 0][mask] = torch.masked_select(coord_stack[..., 0] * sin_theta / theta, mask).float()
+            directions_stack[..., 1][mask] = torch.masked_select(coord_stack[..., 1] * sin_theta / theta, mask).float()
+            directions_stack[..., 2][mask] = -torch.masked_select(torch.cos(theta), mask).float()
+
         for value in cam_types:
-            if value not in [CameraType.PERSPECTIVE.value, CameraType.FISHEYE.value, CameraType.EQUIRECTANGULAR.value]:
+            if value not in [CameraType.PERSPECTIVE.value, CameraType.FISHEYE.value, CameraType.EQUIRECTANGULAR.value, CameraType.VR180.value]:
                 raise ValueError(f"Camera type {value} not supported.")
 
         assert directions_stack.shape == (3,) + num_rays_shape + (3,)
@@ -713,6 +727,45 @@ class Cameras(TensorDataclass):
         assert pixel_area.shape == num_rays_shape + (1,)
 
         times = self.times[camera_indices, 0] if self.times is not None else None
+
+        # TODO: Work out torchy way to do this.
+        # Need to do this in camera space. Maybe 
+        EYE_DISTANCE = 0.5
+
+        right_eye_shift_matrix = torch.eye(4)[None, :3, :] [0]
+        right_eye_shift_matrix[0][3] = EYE_DISTANCE
+
+        left_eye_shift_matrix = torch.eye(4)[None, :3, :] [0]
+        left_eye_shift_matrix[0][3] = -EYE_DISTANCE
+
+        right_eye_matrix = pose_utils.multiply(c2w[0][0], right_eye_shift_matrix)
+        origin_r = right_eye_matrix[...,:3,3];
+        left_eye_matrix = pose_utils.multiply(c2w[0][0], left_eye_shift_matrix)
+        origin_l = left_eye_matrix[...,:3,3];
+
+        # print("OL mat:", origin_l)
+
+        # origin_l = origins[0][0].clone();
+        # origin_l[0] = -EYE_DISTANCE;
+        # print("OL jack:", origin_l)
+        # origin_r = origins[0][0].clone();
+        # origin_r[0] = EYE_DISTANCE;
+
+        assert origins.shape[1] & 1 == 0
+        # First shift origins
+        half_x_value = origins.shape[1] // 2
+        for y in range(origins.shape[0]):
+          for x in range(half_x_value):            
+            origins[y][x] = origin_l
+            origins[y][x + half_x_value] = origin_r
+
+        half_x_value = directions.shape[1] // 2
+        for y in range(directions.shape[0]):
+          # TODO we should probably be smarter at creation time.
+          directions_downsampled = directions[y][::2].clone()
+          directions[y][:half_x_value] = directions_downsampled
+          directions[y][half_x_value:] = directions_downsampled
+
 
         return RayBundle(
             origins=origins,
