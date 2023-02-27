@@ -732,10 +732,10 @@ class Cameras(TensorDataclass):
         # Need to do this in camera space. Maybe 
         EYE_DISTANCE = 0.5
 
-        right_eye_shift_matrix = torch.eye(4)[None, :3, :] [0]
+        right_eye_shift_matrix = torch.eye(4, device=self.device)[None, :3, :] [0]
         right_eye_shift_matrix[0][3] = EYE_DISTANCE
 
-        left_eye_shift_matrix = torch.eye(4)[None, :3, :] [0]
+        left_eye_shift_matrix = torch.eye(4, device=self.device)[None, :3, :] [0]
         left_eye_shift_matrix[0][3] = -EYE_DISTANCE
 
         right_eye_matrix = pose_utils.multiply(c2w[0][0], right_eye_shift_matrix)
