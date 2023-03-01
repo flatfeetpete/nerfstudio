@@ -169,7 +169,7 @@ def get_path_from_json(camera_path: Dict[str, Any]) -> Cameras:
     camera_to_worlds = torch.stack(c2ws, dim=0)
     fx = torch.tensor(fxs)
     fy = torch.tensor(fys)
-    ipd = torch.tensor(ipds)
+    ipd = ipds
     return Cameras(
         fx=fx,
         fy=fy,
