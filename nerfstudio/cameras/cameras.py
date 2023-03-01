@@ -756,16 +756,16 @@ class Cameras(TensorDataclass):
             # First shift origins
             half_x_value = origins.shape[1] // 2
             for y in range(origins.shape[0]):
-            for x in range(half_x_value):            
-                origins[y][x] = origin_l
-                origins[y][x + half_x_value] = origin_r
+                for x in range(half_x_value):            
+                    origins[y][x] = origin_l
+                    origins[y][x + half_x_value] = origin_r
 
             half_x_value = directions.shape[1] // 2
             for y in range(directions.shape[0]):
-            # TODO we should probably be smarter at creation time.
-            directions_downsampled = directions[y][::2].clone()
-            directions[y][:half_x_value] = directions_downsampled
-            directions[y][half_x_value:] = directions_downsampled
+                # TODO we should probably be smarter at creation time.
+                directions_downsampled = directions[y][::2].clone()
+                directions[y][:half_x_value] = directions_downsampled
+                directions[y][half_x_value:] = directions_downsampled
 
 
         return RayBundle(
