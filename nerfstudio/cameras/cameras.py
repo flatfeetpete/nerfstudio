@@ -736,10 +736,10 @@ class Cameras(TensorDataclass):
         # TODO: This likely needs to be up above, but I'm unsure how to get that to happen.
         ipds = list({self.ipd})
         assert len(ipds) == 1 
-        if ipd[0] is not None:
+        if ipds[0] is not None:
             # Should likely be a function
             # TODO: Work out torchy way to do this.
-            EYE_DISTANCE = ipd[0]
+            EYE_DISTANCE = ipds[0]
 
             right_eye_shift_matrix = torch.eye(4, device=self.device)[None, :3, :] [0]
             right_eye_shift_matrix[0][3] = EYE_DISTANCE
