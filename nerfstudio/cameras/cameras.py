@@ -112,6 +112,7 @@ class Cameras(TensorDataclass):
             ]
         ] = CameraType.PERSPECTIVE,
         times: Optional[TensorType["num_cameras"]] = None,
+        ipd: Optional[TensorType["num_camera"]] = None
     ) -> None:
         """Initializes the Cameras object.
 
@@ -137,6 +138,8 @@ class Cameras(TensorDataclass):
         # cx cy calculation
         self.cx = self._init_get_fc_xy(cx, "cx")  # @dataclass's post_init will take care of broadcasting
         self.cy = self._init_get_fc_xy(cy, "cy")  # @dataclass's post_init will take care of broadcasting
+
+        self.ipd = self._init-get_fc_xy(ipd, "ipd")
 
         # Distortion Params Calculation:
         self.distortion_params = distortion_params  # @dataclass's post_init will take care of broadcasting
@@ -730,43 +733,39 @@ class Cameras(TensorDataclass):
 
         times = self.times[camera_indices, 0] if self.times is not None else None
 
-        # TODO: Work out torchy way to do this.
-        # Need to do this in camera space. Maybe 
-        EYE_DISTANCE = 0.05
+        # TODO: This likely needs to be up above, but I'm unsure how to get that to happen.
+        ipds = torch.unique(self.ipd, sorted=True)
+        assert len(ipds) == 1
+        if ipd[0] is not None:
+            # Should likely be a function
+            # TODO: Work out torchy way to do this.
+            EYE_DISTANCE = ipd[0]
 
-        right_eye_shift_matrix = torch.eye(4, device=self.device)[None, :3, :] [0]
-        right_eye_shift_matrix[0][3] = EYE_DISTANCE
+            right_eye_shift_matrix = torch.eye(4, device=self.device)[None, :3, :] [0]
+            right_eye_shift_matrix[0][3] = EYE_DISTANCE
 
-        left_eye_shift_matrix = torch.eye(4, device=self.device)[None, :3, :] [0]
-        left_eye_shift_matrix[0][3] = -EYE_DISTANCE
+            left_eye_shift_matrix = torch.eye(4, device=self.device)[None, :3, :] [0]
+            left_eye_shift_matrix[0][3] = -EYE_DISTANCE
 
-        right_eye_matrix = pose_utils.multiply(c2w[0][0], right_eye_shift_matrix)
-        origin_r = right_eye_matrix[...,:3,3];
-        left_eye_matrix = pose_utils.multiply(c2w[0][0], left_eye_shift_matrix)
-        origin_l = left_eye_matrix[...,:3,3];
+            right_eye_matrix = pose_utils.multiply(c2w[0][0], right_eye_shift_matrix)
+            origin_r = right_eye_matrix[...,:3,3];
+            left_eye_matrix = pose_utils.multiply(c2w[0][0], left_eye_shift_matrix)
+            origin_l = left_eye_matrix[...,:3,3];
 
-        # print("OL mat:", origin_l)
+            assert origins.shape[1] & 1 == 0
+            # First shift origins
+            half_x_value = origins.shape[1] // 2
+            for y in range(origins.shape[0]):
+            for x in range(half_x_value):            
+                origins[y][x] = origin_l
+                origins[y][x + half_x_value] = origin_r
 
-        # origin_l = origins[0][0].clone();
-        # origin_l[0] = -EYE_DISTANCE;
-        # print("OL jack:", origin_l)
-        # origin_r = origins[0][0].clone();
-        # origin_r[0] = EYE_DISTANCE;
-
-        assert origins.shape[1] & 1 == 0
-        # First shift origins
-        half_x_value = origins.shape[1] // 2
-        for y in range(origins.shape[0]):
-          for x in range(half_x_value):            
-            origins[y][x] = origin_l
-            origins[y][x + half_x_value] = origin_r
-
-        half_x_value = directions.shape[1] // 2
-        for y in range(directions.shape[0]):
-          # TODO we should probably be smarter at creation time.
-          directions_downsampled = directions[y][::2].clone()
-          directions[y][:half_x_value] = directions_downsampled
-          directions[y][half_x_value:] = directions_downsampled
+            half_x_value = directions.shape[1] // 2
+            for y in range(directions.shape[0]):
+            # TODO we should probably be smarter at creation time.
+            directions_downsampled = directions[y][::2].clone()
+            directions[y][:half_x_value] = directions_downsampled
+            directions[y][half_x_value:] = directions_downsampled
 
 
         return RayBundle(

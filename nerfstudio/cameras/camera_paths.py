@@ -139,9 +139,12 @@ def get_path_from_json(camera_path: Dict[str, Any]) -> Cameras:
     else:
         camera_type = CameraType.PERSPECTIVE
 
+    default_ipd = camera_path.get("default_ipd")
+
     c2ws = []
     fxs = []
     fys = []
+    ipds = []
     for camera in camera_path["camera_path"]:
         # pose
         c2w = torch.tensor(camera["camera_to_world"]).view(4, 4)[:3]
@@ -155,6 +158,7 @@ def get_path_from_json(camera_path: Dict[str, Any]) -> Cameras:
             focal_length = three_js_perspective_camera_focal_length(fov, image_height)
             fxs.append(focal_length)
             fys.append(focal_length)
+        ipds.append(camera.get("ipd", default_ipd))
 
     # Iff ALL cameras in the path have a "time" value, construct Cameras with times
     if all("render_time" in camera for camera in camera_path["camera_path"]):
@@ -165,6 +169,7 @@ def get_path_from_json(camera_path: Dict[str, Any]) -> Cameras:
     camera_to_worlds = torch.stack(c2ws, dim=0)
     fx = torch.tensor(fxs)
     fy = torch.tensor(fys)
+    ipd = torch.tensor(ipds)
     return Cameras(
         fx=fx,
         fy=fy,
@@ -173,4 +178,5 @@ def get_path_from_json(camera_path: Dict[str, Any]) -> Cameras:
         camera_to_worlds=camera_to_worlds,
         camera_type=camera_type,
         times=times,
+        ipd=ipd
     )
