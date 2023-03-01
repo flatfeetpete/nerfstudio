@@ -139,7 +139,7 @@ class Cameras(TensorDataclass):
         self.cx = self._init_get_fc_xy(cx, "cx")  # @dataclass's post_init will take care of broadcasting
         self.cy = self._init_get_fc_xy(cy, "cy")  # @dataclass's post_init will take care of broadcasting
 
-        self.ipd = self._init_get_fc_xy(ipd, "ipd")
+        self.ipd = ipd
 
         # Distortion Params Calculation:
         self.distortion_params = distortion_params  # @dataclass's post_init will take care of broadcasting
