@@ -734,8 +734,8 @@ class Cameras(TensorDataclass):
         times = self.times[camera_indices, 0] if self.times is not None else None
 
         # TODO: This likely needs to be up above, but I'm unsure how to get that to happen.
-        ipds = torch.unique(self.ipd, sorted=True)
-        assert len(ipds) == 1
+        ipds = list({self.ipd})
+        assert len(ipds) == 1 
         if ipd[0] is not None:
             # Should likely be a function
             # TODO: Work out torchy way to do this.
