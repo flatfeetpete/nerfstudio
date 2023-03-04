@@ -735,7 +735,8 @@ class Cameras(TensorDataclass):
         times = self.times[camera_indices, 0] if self.times is not None else None
 
         # TODO: This likely needs to be up above, but I'm unsure how to get that to happen.
-        ipds = list({*self.ipd})
+        # Self.ipd is None in training
+        ipds = list({*self.ipd}) if self.ipd else [None]
         assert len(ipds) == 1 
         if ipds[0] is not None:
             # Should likely be a function
