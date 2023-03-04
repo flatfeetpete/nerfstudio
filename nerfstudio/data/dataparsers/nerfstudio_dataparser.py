@@ -76,6 +76,9 @@ class Nerfstudio(DataParser):
     def _generate_dataparser_outputs(self, split="train"):
         # pylint: disable=too-many-statements
 
+        CONSOLE.log(f"[yellow] Loading from {self.config.data}.")
+
+
         if self.config.data.suffix == ".json":
             meta = load_from_json(self.config.data)
             data_dir = self.config.data.parent
