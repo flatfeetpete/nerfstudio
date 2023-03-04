@@ -204,6 +204,7 @@ class Nerfstudio(DataParser):
             CONSOLE.log(f"[yellow] Dataset is overriding orientation method to {orientation_method}")
         else:
             orientation_method = self.config.orientation_method
+            CONSOLE.log(f"[yellow] Didn't work :-()")
 
         poses = torch.from_numpy(np.array(poses).astype(np.float32))
         poses, transform_matrix = camera_utils.auto_orient_and_center_poses(
