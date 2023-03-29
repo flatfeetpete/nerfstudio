@@ -95,6 +95,7 @@ class Pipeline(nn.Module):
 
     datamanager: DataManager
     _model: Model
+    world_size: int
 
     @property
     def model(self):
@@ -107,9 +108,7 @@ class Pipeline(nn.Module):
         return self.model.device
 
     def load_state_dict(self, state_dict: Mapping[str, Any], strict: bool = True):
-        model_state = {
-            key.replace("_model.", ""): value for key, value in state_dict.items() if key.startswith("_model.")
-        }
+        model_state = {key[len("_model.") :]: value for key, value in state_dict.items() if key.startswith("_model.")}
         pipeline_state = {key: value for key, value in state_dict.items() if not key.startswith("_model.")}
         self._model.load_state_dict(model_state, strict=strict)
         super().load_state_dict(pipeline_state, strict=False)
@@ -203,6 +202,7 @@ class VanillaPipelineConfig(cfg.InstantiateConfig):
 class VanillaPipeline(Pipeline):
     """The pipeline class for the vanilla nerf setup of multiple cameras for one or a few scenes.
 
+    Args:
         config: configuration to instantiate pipeline
         device: location to place model and data
         test_mode:
@@ -370,7 +370,9 @@ class VanillaPipeline(Pipeline):
             loaded_state: pre-trained model state dict
             step: training step of the loaded checkpoint
         """
-        state = {key.replace("module.", ""): value for key, value in loaded_state.items()}
+        state = {
+            (key[len("module.") :] if key.startswith("module.") else key): value for key, value in loaded_state.items()
+        }
         self._model.update_to_step(step)
         self.load_state_dict(state, strict=True)
 
