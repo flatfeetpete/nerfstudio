@@ -76,12 +76,8 @@ class Nerfstudio(DataParser):
     def _generate_dataparser_outputs(self, split="train"):
         # pylint: disable=too-many-statements
 
-<<<<<<< HEAD
         CONSOLE.log(f"[yellow] Loading from {self.config.data}.")
-
-=======
         assert self.config.data.exists(), f"Data directory {self.config.data} does not exist."
->>>>>>> upstream/main
 
         if self.config.data.suffix == ".json":
             meta = load_from_json(self.config.data)
